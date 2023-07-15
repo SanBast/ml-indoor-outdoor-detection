@@ -7,6 +7,14 @@ from sktime.datatypes._panel._convert import from_3d_numpy_to_nested
 
 
 class DataCollector(object):
+	'''
+	Base class for data gathering from input path.
+	Cleaning dataset following a specific pipeline.
+
+	----------------
+
+	kwargs: it accepts a dictionary of paths, sensor chosen, win size.
+	'''
 	def __init__(self, *arg, **kwargs):
 		self.path = kwargs['path']
 		self.paths_new_format = kwargs['paths_new_format']

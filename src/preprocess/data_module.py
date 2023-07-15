@@ -10,6 +10,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 
+import pytorch_lightning as pl
 
 class IndoorDataset(Dataset):
   def __init__(self, sequences):

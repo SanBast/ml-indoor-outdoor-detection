@@ -20,9 +20,9 @@ warnings.filterwarnings("ignore")
 
 
 class RNNClassifier(nn.Module):
- '''
- RNN architecture. It allows you to choose between LSTM and GRU. LSTM is recommended. 
- '''
+  '''
+  RNN architecture. It allows you to choose between LSTM and GRU. LSTM is recommended. 
+  '''
   def __init__(self, type_rnn, n_features, n_classes, n_hidden=256, n_layers=3):
     super().__init__()
     self.type_rnn = type_rnn
@@ -72,9 +72,9 @@ class BidirLSTM(nn.Module):
         self.num_layers = num_layers
 
         avail_activations = {
-        	'relu': nn.ReLU(),
-        	'gelu': nn.GELU(),
-        	'elu': nn.ELU()
+          'relu': nn.ReLU(),
+          'gelu': nn.GELU(),
+          'elu': nn.ELU()
         }
 
         self.activation = avail_activations[activation]
@@ -109,7 +109,7 @@ class BidirLSTM(nn.Module):
         return (h0, c0)
 
     def forward(self, x): 
-    	# Note: x is (batch_size, T, F), permute to (T, batch_size, F)
+      # Note: x is (batch_size, T, F), permute to (T, batch_size, F)
         x = x.permute(1, 0, 2)
 
         # See: https://discuss.pytorch.org/t/solved-why-we-need-to-detach-variable-which-contains-hidden-representation/1426/2
@@ -127,7 +127,7 @@ class IndoorPredictor(pl.LightningModule):
   def __init__(self, type_rnn: str, n_features: int, n_classes: int):
     super().__init__()
     '''
-	BidirLSTM deprecated -- not to be used
+  BidirLSTM deprecated -- not to be used
 
     self.model = BidirLSTM(
         in_dim=n_features,
@@ -215,6 +215,10 @@ class IndoorDataset(Dataset):
     )
 
 class IndoorDataModule(pl.LightningDataModule):
+  '''
+  Dividing various sequences in train, test, val. 
+  Required module for Pytorch Lightning training
+  '''
   def __init__(self, train_sequences, test_sequences, val_sequences, batch_size):
     super().__init__()
     self.train_sequences = train_sequences

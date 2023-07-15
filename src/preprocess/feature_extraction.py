@@ -5,6 +5,14 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
 class FeatExtractor():
+    '''
+    Class able to extract time-frequency features. 
+    
+    ---------------------------
+    
+    type: 'all', 'time', 'corr', 'freq'. 
+        It allows you to choose what kind of features you decide.
+    '''
     def __init__(self, sensors, type:str="all") -> None:
         self.sensors = sensors
         self.type = type
