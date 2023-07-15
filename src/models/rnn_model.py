@@ -20,6 +20,9 @@ warnings.filterwarnings("ignore")
 
 
 class RNNClassifier(nn.Module):
+ '''
+ RNN architecture. It allows you to choose between LSTM and GRU. LSTM is recommended. 
+ '''
   def __init__(self, type_rnn, n_features, n_classes, n_hidden=256, n_layers=3):
     super().__init__()
     self.type_rnn = type_rnn
@@ -118,6 +121,9 @@ class BidirLSTM(nn.Module):
 
 
 class IndoorPredictor(pl.LightningModule):
+  '''
+  Pytorch-lightning requires this as Class to inject data to the model
+  '''
   def __init__(self, type_rnn: str, n_features: int, n_classes: int):
     super().__init__()
     '''
