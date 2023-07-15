@@ -3,6 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from config import COL_NAMES
+from sktime.datatypes._panel._convert import from_3d_numpy_to_nested
 
 
 class DataCollector(object):
@@ -83,6 +84,9 @@ class DataframeToSeq(DataCollector):
 		self.win_size = win_size
 		self.df = self.preprocess()
 		self.df = pd.concat([self.df]+self.df_new_format)
+		self.FEATURE_COLS = []
+		self.sequences = []
+		self.labels = []
   	
    	#------TODO------
     #def select_valids
@@ -91,18 +95,19 @@ class DataframeToSeq(DataCollector):
 		not_cols = set(['Timestamp', 'Date', 'Patient'])
 		all_cols = set(self.df.columns.to_list())
 
-		FEATURE_COLS = sorted(list(set.difference(all_cols, not_cols)))
+		self.FEATURE_COLS = sorted(list(set.difference(all_cols, not_cols)))
 
-		df_preprocess = pd.DataFrame(columns=FEATURE_COLS)
+		df_preprocess = pd.DataFrame(columns=self.FEATURE_COLS)
 
 		for k, group in self.df.groupby('Patient'):
 			print('Processing patient: ', k)
 			
-			# 6001, 6002, 6003 ids are retrieved differently from standards
+			# 6001, 6002, 6003 ids are retrieved differently 
+   			# from standards
 			if k not in [6001, 6002, 6003]:
 				for ts in group.Timestamp.unique():
 					if group[group['Timestamp']==ts]['Timestamp'].value_counts().values in [12800, 12799, 12801]:
-						data = group[group['Timestamp']==ts][FEATURE_COLS]
+						data = group[group['Timestamp']==ts][self.FEATURE_COLS]
 						df_train = pd.concat([df_train, data])
 			else:
 				data = group[~(group['Date'].isin(['13/04/2022 10:05:37','13/04/2022 18:34:28','14/06/2022 11:16:13', 
@@ -112,3 +117,39 @@ class DataframeToSeq(DataCollector):
 		df_preprocess['series_id'] = np.arange(len(df_preprocess)) // self.win_size + 1
 		y = df_preprocess[['series_id', 'Indoor']]
 
+		return df_preprocess, y
+
+	@staticmethod
+	def count_odd_slices(df):
+		for t in df.series_id.value_counts().values:
+			if t!=100:
+				count_slices+=t
+		return df.iloc[:-count_slices] if count_slices!=0 else df
+
+	def return_sequences(self):
+		df_preprocess, y = self.prepare_for_slicing()
+		df_slices = self.count_odd_slices(df_preprocess)
+
+		sequences = []
+		labels = []
+  
+		for series_id, group in tqdm(df_slices.groupby('series_id'), position=0, leave=True):
+			sequence_features = group[self.FEATURE_COLS[1:]].to_numpy()
+			labels.append(y[y.series_id==series_id].iloc[0].Indoor)
+			sequences.append(sequence_features)
+
+		sequences = np.swapaxes(np.array(sequences),1,2)
+		self.sequences, self.labels = sequences, labels
+		return self.sequences, self.labels
+
+	def return_nested_df(self):
+		sequences, labels = self.return_sequences()
+		nested_df = from_3d_numpy_to_nested(
+      					sequences, 
+           				column_names=self.FEATURE_COLS[1:], 
+               			cells_as_numpy=True
+                  	)
+		y_df = pd.DataFrame(labels)
+		return nested_df,y_df
+  
+  		
