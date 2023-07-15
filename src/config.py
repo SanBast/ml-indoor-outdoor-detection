@@ -1,5 +1,5 @@
 DATA_CONFIG = {
-	'path': '/path/to/data.csv',
+	'path': '/path/to/subjects.csv',
 	'paths_new_format': ['...', '...'], # some data file are retrieved differently
 	'sensor': 'LF',
 	'win_size': 100
