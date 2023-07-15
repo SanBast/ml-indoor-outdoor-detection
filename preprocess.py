@@ -7,16 +7,23 @@ from sktime.datatypes._panel._convert import from_3d_numpy_to_nested
 
 
 class DataCollector(object):
-	def __init__(self, path, paths_new_format, sensor):
-		self.path = path
-		self.paths_new_format = paths_new_format
-		self.sensor = sensor
-		self.df = pd.read_csv(path).dropna()
+	def __init__(self, *arg, **kwargs):
+		self.path = kwargs['path']
+		self.paths_new_format = kwargs['paths_new_format']
+		self.sensor = kwargs['sensor']
+  
+		#read all the ids and concatenate them
+		self.df = pd.concat([
+      		pd.read_csv(p).dropna(inplace=True)
+        ] for p in self.path) if self.path is not None else pd.DataFrame([])
 		self.df.reset_index(inplace=True, drop=True)
 
+		assert self.path is not None or self.paths_new_format is not None
+  
+  		# for subjects beginning with 6xxx
 		self.df_new_format = [
 			pd.read_csv(p).dropna() for p in self.paths_new_format
-		]
+		] if self.paths_new_format is not None else pd.DataFrame([])
 
 	def __len__(self):
 		return len(self.df)
@@ -79,9 +86,9 @@ class DataCollector(object):
 		return self.df
 
 class DataframeToSeq(DataCollector):
-	def __init__(self, win_size):
-		super().__init__()
-		self.win_size = win_size
+	def __init__(self, *args, **kwargs):
+		self.win_size = kwargs['win_size']
+		super().__init__(*args, **kwargs)
 		self.df = self.preprocess()
 		self.df = pd.concat([self.df]+self.df_new_format)
 		self.FEATURE_COLS = []
@@ -111,7 +118,7 @@ class DataframeToSeq(DataCollector):
 						df_train = pd.concat([df_train, data])
 			else:
 				data = group[~(group['Date'].isin(['13/04/2022 10:05:37','13/04/2022 18:34:28','14/06/2022 11:16:13', 
-												'14/06/2022 14:20:03', '14/04/2022 07:58:00', '14/04/2022 16:22:01']))][FEATURE_COLS]
+												'14/06/2022 14:20:03', '14/04/2022 07:58:00', '14/04/2022 16:22:01']))][self.FEATURE_COLS]
 				df_preprocess = df_preprocess.append(data)
 
 		df_preprocess['series_id'] = np.arange(len(df_preprocess)) // self.win_size + 1
@@ -141,6 +148,16 @@ class DataframeToSeq(DataCollector):
 		sequences = np.swapaxes(np.array(sequences),1,2)
 		self.sequences, self.labels = sequences, labels
 		return self.sequences, self.labels
+
+	def return_sequences_rnn(self):
+		df_preprocess, y = self.prepare_for_slicing()
+		df_slices = self.count_odd_slices(df_preprocess)
+  
+		for series_id, group in tqdm(df_slices.groupby('series_id'), position=0, leave=True):
+			sequence_features = group[self.FEATURE_COLS[1:]]
+			label = y[y.series_id==series_id].iloc[0].Indoor
+			self.sequences.append((sequence_features, label))
+		return self.sequences
 
 	def return_nested_df(self):
 		sequences, labels = self.return_sequences()

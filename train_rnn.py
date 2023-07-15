@@ -1,14 +1,11 @@
 import torch
 import pytorch_lightning as pl
-from multiprocessing import cpu_count
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
-from sklearn.metrics import classification_report, confusion_matrix, f1_score, roc_auc_score
-from torchmetrics import Accuracy, F1Score 
+from sklearn.model_selection import train_test_split
 
-from rnn_model import IndoorPredictor
-from config import TRAIN_PARAMS, EARLY_STOPPING_PARAMS
-from data_module import IndoorDataModule
+from rnn_model import IndoorPredictor, IndoorDataModule
+from config import TRAIN_PARAMS, EARLY_STOPPING_PARAMS, DATA_CONFIG
 from preprocess import DataframeToSeq
 
 def train(model, data_module):
@@ -38,9 +35,10 @@ def train(model, data_module):
 
 def main():
 
-    df2seq = DataframeToSeq()
-    train_sequences, val_sequences = df2seq.sequences()
-
+    df2seq = DataframeToSeq(**DATA_CONFIG)
+    train_sequences = df2seq.return_sequences_rnn()
+    train_sequences, val_sequences = train_test_split(train_sequences, test_size=0.8)
+    
     model = IndoorPredictor(
         type_rnn='lstm',
         n_features=len(train_sequences[0][0].columns),
